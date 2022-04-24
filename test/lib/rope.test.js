@@ -68,29 +68,46 @@ describe("deletion", () => {
   describe("deleting from branch", () => {
     test("delete first node", () => { 
       const rope = new RopeBranch(new RopeLeaf("ABC"), new RopeLeaf("DEF"));
-      return expect(deleteRange(rope, 0, 3).toString()).toEqual("DEF");
+      expect(deleteRange(rope, 0, 3).toString()).toEqual("DEF");
     });
 
     test("delete last node", () => {
       const rope = new RopeBranch(new RopeLeaf("ABC"), new RopeLeaf("DEF"));
-      return expect(deleteRange(rope, 3, 7).toString()).toEqual("ABC");
+      expect(deleteRange(rope, 3, 7).toString()).toEqual("ABC");
     })
 
-    test("delete partially from both nodes", () => {
+    test("delete partially from multiple nodes", () => {
       const rope = new RopeBranch(new RopeLeaf("ABC"), new RopeLeaf("DEF"));
-      return expect(deleteRange(rope, 2, 4).toString()).toEqual("ABEF");
+      expect(deleteRange(rope, 2, 4).toString()).toEqual("ABEF");
     })
 
     // TODO: tests depend heavily on implementation
-    test("deletions affect multiple nodes", () => {
+    test("delete partial and full nodes", () => {
       const rope = new RopeBranch(
         new RopeBranch(new RopeLeaf("ABC"), new RopeLeaf("DEFG")),
         new RopeBranch(new RopeLeaf("H"), new RopeLeaf("IJKLMNO"))
       );
-      return expect(deleteRange(rope, 2, 11).toString()).toEqual("ABLMNO");
+      expect(deleteRange(rope, 2, 11).toString()).toEqual("ABLMNO");
     })
   });
 });
+
+// This tests that the original rope is not mutated by insertions or deletions.
+// It would be more memory-efficient to mutate the data structure in place rather than
+// treating it as immutable, but it was easier to implement in a time-limited setting
+// and simpler as immutable, since there's no need to account for the possibility of
+// weights changing while in the middle of performing an insertion or deletion.
+test("immutability", () => {
+  const rope = new RopeLeaf("");
+  const ropeWithContent = insert(rope, "ABC", 0);
+  expect(ropeWithContent.toString()).toEqual("ABC");
+  expect(rope.toString()).toEqual("");
+
+  const truncatedRopeWithContent = deleteRange(ropeWithContent, 0, 1);
+  expect(truncatedRopeWithContent.toString()).toEqual("BC");
+  expect(ropeWithContent.toString()).toEqual("ABC");
+  expect(rope.toString()).toEqual("");
+})
 
 // describe('Extra Credit: tree is rebalanced', () => {
 //   expect(rebalance(createRopeFromMap({

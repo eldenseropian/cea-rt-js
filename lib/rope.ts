@@ -1,19 +1,5 @@
 /*
-  Rope notes:
-  - binary tree
-  - leaves: string and length/weight
-  - non-leaf nodes: sum of lengths of leaves in left subtree
-  at a non-leaf node, weight is the length of the first part of the string, contained in the leaves of the left subtree
-  strings in leaves are assumed immutable
-  - insertion
-    - at 0: make new left-most leaf node
-    - at end: make new right-most leaf node
-    - in middle, not splitting existing nodes make new node and search for location
-    - in middle, splitting existing nodes: break existing node up into left and right part, add new node in between
-  - deletion:
-    - remove entire node
-    - remove characters from existing node
-  - weight updates need to be propagated up tree
+  See notes on "immutability" test about decision to make this an immutable data structure.
 */
 
 type MapBranch = {
