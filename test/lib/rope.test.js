@@ -10,6 +10,13 @@ const createLeaf = (text) => createRopeFromMap({
 
 /* 
   These tests are here as a starting point, they are not comprehensive
+
+  // NOTE: tests added are influenced heavily by implementation
+  // For the sake of time, tests were intentionally written in a way that was aware of how the
+  // string was split up into leaf nodes. This made it easier to test edge cases around affecting
+  // entire or partial nodes, but makes these tests less effective if the implementation were to change.
+  // In the long term, care would be taken to provide a sufficiently wide range of tests that
+  // provide enough coverage regardless of implementation.
 */
 describe("rope basics", () => {
   test("leaf constructor", () => expect(createLeaf('test').toString()).toEqual('test'));
@@ -81,7 +88,6 @@ describe("deletion", () => {
       expect(deleteRange(rope, 2, 4).toString()).toEqual("ABEF");
     })
 
-    // TODO: tests depend heavily on implementation
     test("delete partial and full nodes", () => {
       const rope = new RopeBranch(
         new RopeBranch(new RopeLeaf("ABC"), new RopeLeaf("DEFG")),
@@ -107,6 +113,23 @@ test("immutability", () => {
   expect(truncatedRopeWithContent.toString()).toEqual("BC");
   expect(ropeWithContent.toString()).toEqual("ABC");
   expect(rope.toString()).toEqual("");
+})
+
+
+// tests that combine operations on a single instance to check for bad interactions 
+test("multiple operations", () => {
+  let rope = new RopeLeaf("ABC");
+  rope = insert(rope, "DEF", 1);
+  expect(rope.toString()).toEqual("ADEFBC");
+  rope = insert(rope, "****", 0);
+  expect(rope.toString()).toEqual("****ADEFBC");
+  rope = deleteRange(rope, 3, 5);
+  expect(rope.toString()).toEqual("***DEFBC");
+  rope = deleteRange(rope, 3, 5);
+  expect(rope.toString()).toEqual("***FBC");
+  rope = insert(rope, "012", 6);
+  expect(rope.toString()).toEqual("***FBC012");
+
 })
 
 // describe('Extra Credit: tree is rebalanced', () => {

@@ -56,11 +56,11 @@ export class RopeLeaf implements IRope {
 }
 
 export class RopeBranch implements IRope {
-  left: IRope;
-  right: IRope;
+  left: Rope;
+  right: Rope;
   cachedSize: number;
 
-  constructor(left: IRope, right: IRope) {
+  constructor(left: Rope, right: Rope) {
     this.left = left;
     this.right = right;
     // Please note that this is defined differently from "weight" in the Wikipedia article.
@@ -133,38 +133,31 @@ export function createRopeFromMap(map: MapRepresentation): IRope {
   return new RopeBranch(left, right);
 }
 
+// This type is just a convenience thing so the compiler can tell that if a rope is not an
+// instance of RopeBranch then it must be a RopeLeaf and vice versa.
+type Rope = RopeBranch | RopeLeaf;
+
 // This is an internal API. You can implement it however you want. 
 // (E.g. you can choose to mutate the input rope or not)
-function splitAt(rope: IRope, position: number): { left: IRope, right: IRope } {
+function splitAt(rope: Rope, position: number): { left: Rope, right: Rope } {
   if (rope instanceof RopeBranch) {
     return { left: rope.left, right: rope.right};
   }
 
-  // TODO handle this more cleanly
-  if (!(rope instanceof RopeLeaf)) {
-    throw new Error("unexpected implementor of IRope");
-  }
-
-  // TODO: what if position is beginningend of string?
+  // TODO: what if position is beginning or end of string?
   return {
-    left: new RopeLeaf(rope.text.substring(0, position)), // TODO: check for off by one errors
+    left: new RopeLeaf(rope.text.substring(0, position)),
     right: new RopeLeaf(rope.text.substring(position))
   }
 }
 
-// TODO: handle invalid ranges
-export function deleteRange(rope: IRope, start: number, end: number): IRope {
+// TODO: handle invalid ranges, e.g. throw exception, truncate to valid range
+export function deleteRange(rope: Rope, start: number, end: number): Rope {
   if (rope instanceof RopeLeaf) {
     return deleteAtLeaf(rope, start, end);
   }
 
-  // TODO handle this more cleanly
-  if (!(rope instanceof RopeBranch)) {
-    throw new Error("unexpected implementor of IRope");
-  }
-
   if (start > rope.left.size()) {
-    // TODO - check for off by one errors
     const newRight = deleteRange(rope.right, Math.max(start - rope.left.size(), 0), end - rope.left.size());
     if (newRight instanceof RopeLeaf && newRight.text === "") {
       // right branch was completely eliminated
@@ -185,19 +178,14 @@ export function deleteRange(rope: IRope, start: number, end: number): IRope {
   return new RopeBranch(deleteRange(rope.left, start, Math.min(end, rope.left.size())), deleteRange(rope.right, Math.max(start - rope.left.size(), 0), end - rope.left.size()));
 }
 
-// TODO: handle invalid ranges
-export function insert(rope: IRope, text: string, location: number): IRope {
+// TODO: handle invalid ranges, e.g. throw exception, truncate to valid range
+export function insert(rope: Rope, text: string, location: number): Rope {
   if (rope instanceof RopeLeaf) {
     return insertAtLeaf(rope, text, location);
   }
 
-  // TODO handle this more cleanly
-  if (!(rope instanceof RopeBranch)) {
-    throw new Error("unexpected implementor of IRope");
-  }
-
   if (location < rope.left.size()) {
-      return new RopeBranch(insert(rope.left, text, location), rope.right);// todo check for shallow copying
+      return new RopeBranch(insert(rope.left, text, location), rope.right);
   }
   
   return new RopeBranch(rope.left, insert(rope.right, text, location - rope.left.size()));
@@ -226,7 +214,7 @@ function insertAtLeaf(ropeLeaf: RopeLeaf, text: string, location: number): RopeB
   return new RopeBranch(splitRope.left, new RopeBranch(new RopeLeaf(text), splitRope.right));
 }
 
-function deleteAtLeaf(ropeLeaf: RopeLeaf, start: number, end: number): IRope | undefined {
+function deleteAtLeaf(ropeLeaf: RopeLeaf, start: number, end: number): Rope {
   // remove the entire node
   if (start === 0 && end === ropeLeaf.size()) {
     return new RopeLeaf(""); // TODO: clean these empty nodes up
@@ -242,15 +230,15 @@ function deleteAtLeaf(ropeLeaf: RopeLeaf, start: number, end: number): IRope | u
     return new RopeLeaf(ropeLeaf.text.substring(0, start))
   }
 
-  // remove from the middle of the string, splitting it into two nodes
-  // TODO: or should this be one new leaf node just with the middle removed? think about with rebalancing
-  // this could use split at, but would require two separate calls - this seems simpler
+  // Remove from the middle of the string, splitting it into two nodes.
+  // TODO: Should this be one new leaf node just with the middle removed? Think about with rebalancing, runtime
   return new RopeBranch(
+    // this could use split at, but would require two separate calls - this seems simpler
     new RopeLeaf(ropeLeaf.text.substring(0, start)),
     new RopeLeaf(ropeLeaf.text.substring(end))
   );
 }
 
-export function rebalance(rope: IRope): IRope {
+export function rebalance(rope: Rope): Rope {
   // TODO
 }
