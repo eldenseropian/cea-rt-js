@@ -166,6 +166,7 @@ function splitAt(rope: IRope, position: number): { left: IRope, right: IRope } {
   }
 }
 
+// TODO: handle invalid ranges
 export function deleteRange(rope: IRope, start: number, end: number): IRope {
   if (rope instanceof RopeLeaf) {
     return deleteAtLeaf(rope, start, end);
@@ -178,8 +179,8 @@ export function deleteRange(rope: IRope, start: number, end: number): IRope {
 
   if (start > rope.left.size()) {
     // TODO - check for off by one errors
-    const newRight = deleteRange(rope.right, start - rope.left.size(), end - rope.left.size());
-    if (newRight === undefined) {
+    const newRight = deleteRange(rope.right, Math.max(start - rope.left.size(), 0), end - rope.left.size());
+    if (newRight instanceof RopeLeaf && newRight.text === "") {
       // right branch was completely eliminated
       return rope.left;
     }
@@ -187,17 +188,18 @@ export function deleteRange(rope: IRope, start: number, end: number): IRope {
   }
 
   if (end < rope.left.size()) {
-    const newLeft = deleteRange(rope.left, start, end);
-    if (newLeft === undefined) {
+    const newLeft = deleteRange(rope.left, start, Math.min(end, rope.left.size()));
+    if (newLeft instanceof RopeLeaf && newLeft.text === "") {
       // left branch was completely eliminated
       return rope.right;
     }
     return new RopeBranch(newLeft, rope.right);
   }
 
-  return new RopeBranch(deleteRange(rope.left, start, end), deleteRange(rope.right, start - rope.left.size(), end - rope.right.size()));
+  return new RopeBranch(deleteRange(rope.left, start, Math.min(end, rope.left.size())), deleteRange(rope.right, Math.max(start - rope.left.size(), 0), end - rope.left.size()));
 }
 
+// TODO: handle invalid ranges
 export function insert(rope: IRope, text: string, location: number): IRope {
   if (rope instanceof RopeLeaf) {
     return insertAtLeaf(rope, text, location);
@@ -241,7 +243,6 @@ function insertAtLeaf(ropeLeaf: RopeLeaf, text: string, location: number): RopeB
 function deleteAtLeaf(ropeLeaf: RopeLeaf, start: number, end: number): IRope | undefined {
   // remove the entire node
   if (start === 0 && end === ropeLeaf.size()) {
-    console.log("total removal");
     return new RopeLeaf(""); // TODO: clean these empty nodes up
   }
 
@@ -258,7 +259,6 @@ function deleteAtLeaf(ropeLeaf: RopeLeaf, start: number, end: number): IRope | u
   // remove from the middle of the string, splitting it into two nodes
   // TODO: or should this be one new leaf node just with the middle removed? think about with rebalancing
   // this could use split at, but would require two separate calls - this seems simpler
-  console.log("split removal");
   return new RopeBranch(
     new RopeLeaf(ropeLeaf.text.substring(0, start)),
     new RopeLeaf(ropeLeaf.text.substring(end))
