@@ -137,14 +137,16 @@ export function createRopeFromMap(map: MapRepresentation): IRope {
 // instance of RopeBranch then it must be a RopeLeaf and vice versa.
 type Rope = RopeBranch | RopeLeaf;
 
-// This is an internal API. You can implement it however you want. 
-// (E.g. you can choose to mutate the input rope or not)
-function splitAt(rope: Rope, position: number): { left: Rope, right: Rope } {
+/**
+ * Split a leaf node into two new leaves connected by a branch
+ * @param rope 
+ * @param position number such that 0 < position < rope.length - 1
+ */
+function splitAt(rope: RopeLeaf, position: number): { left: Rope, right: Rope } {
   if (rope instanceof RopeBranch) {
     return { left: rope.left, right: rope.right};
   }
 
-  // TODO: what if position is beginning or end of string?
   return {
     left: new RopeLeaf(rope.text.substring(0, position)),
     right: new RopeLeaf(rope.text.substring(position))
